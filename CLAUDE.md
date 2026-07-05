@@ -4,7 +4,6 @@
 
 This pipeline reads a ClinGen GCI snapshot (JSONL format) and produces GA4GH Phenopacket v2 JSON files — one per qualifying individual with HPO terms.
 
-**Active branch:** `gci-to-phenopacket-2026-03-cc`
 **Remote:** `github.com/bpow/genegraph-to-phenopacket`
 
 ## Key Files
@@ -14,9 +13,8 @@ This pipeline reads a ClinGen GCI snapshot (JSONL format) and produces GA4GH Phe
 | `src/gci_phenopacket/cli.py` | Click CLI entry point, JSONL loop, output writing |
 | `src/gci_phenopacket/transformer.py` | All GCI → Phenopacket field mapping logic; loads HPO + Mondo via oaklib sqlite adapter (auto-cached by oaklib) |
 | `src/gci_phenopacket/allele_registry_client.py` | AlleleRegistryClient: ClinGen Allele Registry API fetch + persistent gzip-compressed JSON cache |
-| `tests/test_gci_transformer.py` | Unit tests (over 60 tests across 4 test files) |
+| `tests/test_gci_transformer.py` | Unit tests (across 4 test files under `tests/`) |
 | `data/cache/allele_registry_cache.json.gz` | Persistent allele registry variant info cache (gzip-compressed JSON) |
-| `conftest.py` | Adds `src/` to sys.path for tests |
 | `pyproject.toml` | Package metadata and `gci-transform` entry point |
 | `data/gci/` | Input JSONL snapshots |
 | `scripts/combine_yaml.sh` | Concatenate all output JSON phenopackets into a single YAML stream (requires `yq` on PATH) |
@@ -70,11 +68,6 @@ to be installed and on `PATH` (not managed by Pixi — install separately, e.g.
 pixi run test
 ```
 
-## Design Docs
-
-- **Spec:** `docs/superpowers/specs/2026-03-25-gci-to-phenopacket-design.md`
-- **Plan:** `docs/superpowers/plans/2026-03-25-gci-to-phenopacket.md`
-
 ## Key Design Decisions
 
 - Any individual with at least one HPO term is converted — `is_proband` status is not checked
@@ -87,7 +80,7 @@ pixi run test
 - `metadata.external_references` always contains `PMID:{pmid}` (with article title as description); when a provenance ID is present it is appended as a second entry (`gdm:...`)
 - Output files are written to `{output_dir}/{gene_symbol}/{phenopacket_id}.json` by default; `--no-subdirs` / `-S` writes them flat into `{output_dir}/`
 - Tag values: `individual` (direct), `family`, `group` — reflects nesting in the GCI annotation
-- GENO zygosity terms are hardcoded in `GCI_TO_GENO` (4 terms + fallback `GENO:0000137`); unknown values log a warning
+- GENO zygosity terms are hardcoded in `GCI_ZYGOSITY_TO_GENO` (4 terms + fallback `GENO:0000137`); unknown values log a warning
 - `iter_individuals(annotation)` yields `GCIIndividualContext` (fields: `individual`, `individual_id`, `group_id`, `family_id`) for all nesting levels
 - ClinGen Allele Registry API (`https://reg.genome.network`) enriches `VariationDescriptor` with HGVS expressions, VCF record (GRCh38, from the gnomAD v4 id), xrefs, and gene confirmation; three-tier lookup: `carId` → `/allele/{carId}`, then `clinvarVariantId` → `/alleles?ClinVar.variationId={id}`, then GCI record fallback (`hgvsNames`, `dbSNPIds`); responses cached in `data/cache/allele_registry_cache.json.gz` (gzip-compressed)
 - Gene context confirmed by matching `gene_symbol` against the gene list returned by the registry API (applies to both carId and clinvarVariantId lookup paths); falls back to string-match on `clinvarVariantTitle` when no API data available

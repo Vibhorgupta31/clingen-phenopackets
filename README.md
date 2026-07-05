@@ -200,7 +200,8 @@ Read from `individual.recessiveZygosity`. Mapped to GENO terms:
 |---|---|
 | `Homozygous` | `GENO:0000136` |
 | `Heterozygous` | `GENO:0000135` |
-| `Hemizygous` | `GENO:0001059` |
+| `Twotrans` | `GENO:0000402` (compound heterozygous) |
+| `Hemizygous` | `GENO:0000134` |
 | `Unknown` / unrecognised | `GENO:0000137` (unspecified) |
 
 If `recessiveZygosity` is absent, allelic state is omitted from the phenopacket.
