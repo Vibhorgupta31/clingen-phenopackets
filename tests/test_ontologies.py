@@ -17,10 +17,9 @@ def _make_transformer(hp_labels=None, mondo_labels=None):
     return t, hp_adapter
 
 
-def test_hpo_to_labeled_phenotype_normalizes_obo_prefix():
-    """'obo:HP_0001250' is normalized to 'HP:0001250' before lookup."""
+def test_hpo_to_labeled_phenotype_looks_up_by_id():
     t, hp_adapter = _make_transformer(hp_labels={"HP:0001250": "Seizure"})
-    result = t.hpo_to_labeled_phenotype("obo:HP_0001250")
+    result = t.hpo_to_labeled_phenotype("HP:0001250")
     hp_adapter.label.assert_called_with("HP:0001250")
     assert result == {"id": "HP:0001250", "label": "Seizure"}
 

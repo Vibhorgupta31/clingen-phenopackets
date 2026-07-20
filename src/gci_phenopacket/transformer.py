@@ -81,13 +81,12 @@ class GCITransformer:
         self.allele_registry_client = allele_registry_client
 
     def hpo_to_labeled_phenotype(self, hpo_id):
-        """Map HPO ID (e.g. 'obo:HP_0001250' or 'HP:0001250') to {id, label}."""
-        normalized = hpo_id.replace("obo:HP_", "HP:").replace("obo:HP:", "HP:")
-        label = self._hpo.label(normalized)
+        """Map HPO ID (e.g. 'HP:0001250') to {id, label}."""
+        label = self._hpo.label(hpo_id)
         if label is None:
             LOGGER.warning(f"Could not resolve HPO label for {hpo_id}")
-            return {"id": normalized, "label": "Unknown Phenotype"}
-        return {"id": normalized, "label": label}
+            return {"id": hpo_id, "label": "Unknown Phenotype"}
+        return {"id": hpo_id, "label": label}
 
     def phenopackets_from_gci_record(self, record: dict) -> Iterator[pps2.Phenopacket]:
         """Extract phenopackets from a single GCI record dict. Returns list of phenopackets."""
