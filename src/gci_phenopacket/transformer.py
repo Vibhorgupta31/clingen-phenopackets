@@ -80,13 +80,13 @@ class GCITransformer:
         self.preserve_freetext = preserve_freetext
         self.allele_registry_client = allele_registry_client
 
-    def hpo_to_labeled_phenotype(self, hpo_id):
-        """Map HPO ID (e.g. 'HP:0001250') to {id, label}."""
+    def hpo_to_labeled_phenotype(self, hpo_id: str) -> tuple[str, str]:
+        """Map HPO ID (e.g. 'HP:0001250') to (id, label)."""
         label = self._hpo.label(hpo_id)
         if label is None:
             LOGGER.warning(f"Could not resolve HPO label for {hpo_id}")
-            return {"id": hpo_id, "label": "Unknown Phenotype"}
-        return {"id": hpo_id, "label": label}
+            return hpo_id, "Unknown Phenotype"
+        return hpo_id, label
 
     def phenopackets_from_gci_record(self, record: dict) -> Iterator[pps2.Phenopacket]:
         """Extract phenopackets from a single GCI record dict. Returns list of phenopackets."""
@@ -133,22 +133,23 @@ class GCITransformer:
         """Build PhenotypicFeature list from hpoIdInDiagnosis and hpoIdInElimination."""
         features = []
         for hpo_id in individual.get("hpoIdInDiagnosis", []):
-            mapped = self.hpo_to_labeled_phenotype(extract_hpo_id(hpo_id))
+            term_id, term_label = self.hpo_to_labeled_phenotype(extract_hpo_id(hpo_id))
             features.append(pps2.PhenotypicFeature(
-                type=pps2.OntologyClass(id=mapped["id"], label=mapped["label"]),
+                type=pps2.OntologyClass(id=term_id, label=term_label),
                 excluded=False,
                 evidence=[_make_evidence(pmid, article_title)],
             ))
         for hpo_id in individual.get("hpoIdInElimination", []):
-            mapped = self.hpo_to_labeled_phenotype(extract_hpo_id(hpo_id))
+            term_id, term_label = self.hpo_to_labeled_phenotype(extract_hpo_id(hpo_id))
             features.append(pps2.PhenotypicFeature(
-                type=pps2.OntologyClass(id=mapped["id"], label=mapped["label"]),
+                type=pps2.OntologyClass(id=term_id, label=term_label),
                 excluded=True,
                 evidence=[_make_evidence(pmid, article_title)],
             ))
         return features
 
-    def process_diagnosis(self, diagnosis: dict) -> tuple[str, str]:
+    def diagnosis_to_labeled_disease(self, diagnosis: dict) -> tuple[str, str]:
+        """Map a GCI diagnosis dict to (id, label), resolving MONDO IDs against the ontology."""
         raw_disease_id = diagnosis.get("diseaseId") or diagnosis.get("PK") or FALLBACK_DISEASE_ID
         raw_disease_label = diagnosis.get("term")
         if raw_disease_id.startswith("MONDO_"):
@@ -187,7 +188,7 @@ class GCITransformer:
         if len(diag_list) > 1:
             raise ValueError(f"Multiple diagnoses found for individual '{label}' — only one diagnosis is supported per phenopacket. It seems like maybe the GCI structure changed and we need to update the transformer? Diagnosis data: {diag_list}")
         diag = diag_list[0] if diag_list else {}
-        disease_id, disease_label = self.process_diagnosis(diag)
+        disease_id, disease_label = self.diagnosis_to_labeled_disease(diag)
 
         # Phenopacket ID — individual_uuid disambiguates same-label individuals in the same annotation,
         # including labels that differ only by case (which collide on macOS's case-insensitive filesystem).

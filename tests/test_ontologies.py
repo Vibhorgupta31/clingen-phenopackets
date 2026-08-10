@@ -21,11 +21,11 @@ def test_hpo_to_labeled_phenotype_looks_up_by_id():
     t, hp_adapter = _make_transformer(hp_labels={"HP:0001250": "Seizure"})
     result = t.hpo_to_labeled_phenotype("HP:0001250")
     hp_adapter.label.assert_called_with("HP:0001250")
-    assert result == {"id": "HP:0001250", "label": "Seizure"}
+    assert result == ("HP:0001250", "Seizure")
 
 
 def test_hpo_to_labeled_phenotype_returns_fallback_on_unknown_id():
     """Unknown HPO ID returns normalized id with 'Unknown Phenotype' label."""
     t, _ = _make_transformer(hp_labels={})
     result = t.hpo_to_labeled_phenotype("HP:9999999")
-    assert result == {"id": "HP:9999999", "label": "Unknown Phenotype"}
+    assert result == ("HP:9999999", "Unknown Phenotype")
